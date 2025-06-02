@@ -1,0 +1,15 @@
+{
+    "mcpServers": {
+        "open-meteo": {
+            "name": "Open Meteo",
+            "key": "open-meteo",
+            "description": "Weather service",
+            "command": "uv",
+            "args": [
+                "run",
+                "--directory",
+                "/Users/jym/dev/weather/open-meteo-server"
+            ]
+        }
+    }
+}
