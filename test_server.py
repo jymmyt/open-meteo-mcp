@@ -40,6 +40,30 @@ async def test_server():
                 print(f"Timezone: {data.get('timezone')}")
     except Exception as e:
         print(f"Forecast test failed: {e}")
+    
+    # Test get_historical_weather
+    print("\nTesting get_historical_weather tool...")
+    try:
+        async with httpx.AsyncClient() as client:
+            payload = {
+                "latitude": 40.7128,
+                "longitude": -74.0060,
+                "start_date": "2023-01-01",
+                "end_date": "2023-01-07",
+                "hourly": "temperature_2m,precipitation",
+                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
+                "timezone": "America/New_York"
+            }
+            response = await client.post(f"{base_url}/tools/get_historical_weather", json=payload)
+            print(f"Historical weather response: {response.status_code}")
+            if response.status_code == 200:
+                data = response.json()
+                print(f"Location: lat={data.get('latitude')}, lon={data.get('longitude')}")
+                print(f"Timezone: {data.get('timezone')}")
+                if 'daily' in data:
+                    print(f"Daily data points: {len(data['daily'].get('time', []))}")
+    except Exception as e:
+        print(f"Historical weather test failed: {e}")
 
 if __name__ == "__main__":
     print("Open-Meteo FastMCP Server Test Script")

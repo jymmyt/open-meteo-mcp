@@ -1,10 +1,12 @@
 # Open Meteo Server
 
-A simple FastMCP server that provides weather forecasts using the [Open-Meteo API](https://open-meteo.com/). This project exposes a tool to fetch hourly weather forecasts for a given location, suitable for integration with MCP clients or CLI tools.
+A simple FastMCP server that provides weather forecasts and historical weather data using the [Open-Meteo API](https://open-meteo.com/). This project exposes tools to fetch weather forecasts, historical weather data, and model comparisons for any location, suitable for integration with MCP clients or CLI tools.
 
 ## Features
 
 - Fetch hourly weather forecasts for any latitude/longitude.
+- Access historical weather data (reanalysis) from 1940 onwards.
+- Compare weather forecasts from previous model runs.
 - Select weather models and variables (e.g., temperature, precipitation).
 - FastMCP stateless HTTP server, easy to run locally or integrate.
 
@@ -100,6 +102,21 @@ The `get_previous_model_runs` tool retrieves weather forecasts from previous day
 - `hourly`: Comma-separated list of variables (default: `temperature_2m`)
 - `models`: Comma-separated list of models (default: `ecmwf_ifs025,gem_seamless,icon_seamless`)
 - `previous_days`: Number of previous days to retrieve (1-7, default: 5)
+
+### Example: Fetch Historical Weather Data
+
+The `get_historical_weather` tool retrieves actual historical weather data (reanalysis) from 1940 onwards, using the [Open-Meteo Historical Weather API](https://open-meteo.com/en/docs/historical-weather-api).
+
+- `latitude`: Latitude in decimal degrees (e.g., `40.7128`)
+- `longitude`: Longitude in decimal degrees (e.g., `-74.0060`)
+- `start_date`: Start date in `YYYY-MM-DD` format
+- `end_date`: End date in `YYYY-MM-DD` format
+- `hourly`: Comma-separated list of hourly variables (default: `temperature_2m`)
+- `daily`: Comma-separated list of daily aggregated variables (optional)
+- `temperature_unit`: Temperature unit (`celsius` or `fahrenheit`, default: `celsius`)
+- `wind_speed_unit`: Wind speed unit (`kmh`, `ms`, `mph`, or `kn`, default: `kmh`)
+- `precipitation_unit`: Precipitation unit (`mm` or `inch`, default: `mm`)
+- `timezone`: Timezone (e.g., `GMT`, `America/New_York`, default: `GMT`)
 
 ## Development
 

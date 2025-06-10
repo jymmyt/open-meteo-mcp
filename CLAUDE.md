@@ -46,24 +46,27 @@ This is a FastMCP server that provides weather forecast data from the Open-Meteo
 
 1. **FastMCP Server (`open_meteo_server.py`)**: The main server implementation using FastMCP framework
    - Configured for stateless HTTP mode on `127.0.0.1:8000`
-   - Exposes three main tools:
+   - Exposes four main tools:
      - `get_forecast`: Fetches current weather forecasts
      - `get_historical_forecast`: Retrieves historical forecast data
      - `get_previous_model_runs`: Gets previous model run comparisons
+     - `get_historical_weather`: Fetches actual historical weather data (reanalysis) from 1940 onwards
    - Custom endpoints:
      - `/health`: Health check endpoint
    - Pre-defined prompts (accessible via MCP prompt system) for common weather queries
 
-2. **API Integration**: The server acts as a proxy to three Open-Meteo API endpoints:
+2. **API Integration**: The server acts as a proxy to four Open-Meteo API endpoints:
    - Standard forecast API: `https://api.open-meteo.com/v1/forecast`
    - Historical forecast API: `https://historical-forecast-api.open-meteo.com/v1/forecast`
    - Previous runs API: `https://previous-runs-api.open-meteo.com/v1/forecast`
+   - Historical weather (archive) API: `https://archive-api.open-meteo.com/v1/archive`
 
 3. **Tool Parameters**:
    - All tools require `latitude` and `longitude`
-   - Historical and previous runs additionally require `start_date` and `end_date`
+   - Historical tools (historical forecast, previous runs, historical weather) require `start_date` and `end_date`
    - Optional parameters include `hourly` (weather variables) and `models` (forecast models)
    - Previous runs tool automatically adds previous day variants for temperature and precipitation
+   - Historical weather tool supports additional parameters: `daily`, `temperature_unit`, `wind_speed_unit`, `precipitation_unit`, and `timezone`
 
 The server uses `httpx` for async HTTP requests and returns raw JSON responses from the Open-Meteo API to clients.
 
@@ -161,5 +164,6 @@ The server provides pre-defined prompts via the MCP prompt system for common wea
 - **agriculture_forecast(location)**: Agriculture-focused weather data (soil moisture, evapotranspiration)
 - **solar_radiation(location, days)**: Solar radiation forecast for energy planning
 - **travel_weather(destination, date)**: Weather conditions for travel planning
+- **climate_analysis(location, start_year, end_year, month)**: Analyze historical climate patterns for a specific month across years
 
 These prompts automatically generate appropriate queries that utilize the server's tools with the correct parameters. They can be accessed through any MCP client that supports the prompt system.
