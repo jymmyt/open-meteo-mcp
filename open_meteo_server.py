@@ -14,6 +14,7 @@ mcp = FastMCP("open-meteo",
 OPEN_METEO_API_BASE = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_HISTORICAL_API_BASE = "https://historical-forecast-api.open-meteo.com/v1/forecast"
 OPEN_METEO_PREVIOUS_RUNS_API_BASE = "https://previous-runs-api.open-meteo.com/v1/forecast"
+OPEN_METEO_ARCHIVE_API_BASE = "https://archive-api.open-meteo.com/v1/archive"
 
 @mcp.custom_route("/health", methods=["GET"])
 async def health_check(request: Request) -> PlainTextResponse:
@@ -67,7 +68,7 @@ async def historical_weather(location: str, start_date: str, end_date: str) -> s
         start_date: Start date in YYYY-MM-DD format
         end_date: End date in YYYY-MM-DD format
     """
-    return f"Show me the historical weather data for {location} from {start_date} to {end_date}. Include temperature trends and precipitation totals using the get_historical_forecast tool."
+    return f"Show me the historical weather data for {location} from {start_date} to {end_date}. Include temperature trends and precipitation totals using the get_historical_weather tool (for actual historical data from 1940+) or get_historical_forecast tool (for recent forecast data)."
 
 @mcp.prompt()
 async def agriculture_forecast(location: str) -> str:
@@ -97,6 +98,18 @@ async def travel_weather(destination: str, date: str) -> str:
         date: Travel date (YYYY-MM-DD)
     """
     return f"What will the weather be like in {destination} on {date}? Include temperature range, precipitation chances, visibility, and general conditions for travel planning."
+
+@mcp.prompt()
+async def climate_analysis(location: str, start_year: int, end_year: int, month: int) -> str:
+    """Analyze historical climate patterns for a specific month across multiple years.
+    
+    Args:
+        location: Location or coordinates
+        start_year: Start year (e.g., 1980)
+        end_year: End year (e.g., 2023)
+        month: Month to analyze (1-12)
+    """
+    return f"Analyze the climate patterns for {location} during month {month} from {start_year} to {end_year}. Use get_historical_weather to retrieve temperature_2m and precipitation data. Show trends and averages across the years."
 
 @mcp.tool()
 async def get_forecast(
@@ -169,7 +182,8 @@ async def get_previous_model_runs(
     end_date: str,
     hourly: str = "temperature_2m",
     models: str = "ecmwf_ifs025,gem_seamless,icon_seamless",  # ✅ Better models
-    previous_days: int = 5                                     # ✅ User-controlled
+    previous_days: int = 5,
+    timezone: str = "MST"# ✅ User-controlled
 ) -> dict[str, Any]:
     """Fetch previous model runs for a location.
 
@@ -181,6 +195,7 @@ async def get_previous_model_runs(
         hourly: Comma-separated list of hourly variables (e.g., 'temperature_2m,precipitation').
         models: Comma-separated list of models to use for the forecast.
         previous_days: Number of previous days to retrieve (1-7, default: 5).
+        timezone: Timezone (e.g., 'GMT', 'America/New_York', default: 'GMT'). 
     """
     
     # Validate previous_days parameter
@@ -207,7 +222,8 @@ async def get_previous_model_runs(
         "longitude": longitude,
         "start_date": start_date,
         "end_date": end_date,
-        "hourly": ",".join(hourly_params)
+        "hourly": ",".join(hourly_params),
+        "timezone": timezone
         # NOTE: forecast_days and past_days are NOT used in Previous Runs API
     }
     
@@ -216,6 +232,58 @@ async def get_previous_model_runs(
     
     async with httpx.AsyncClient() as client:
         resp = await client.get(OPEN_METEO_PREVIOUS_RUNS_API_BASE, params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+@mcp.tool()
+async def get_historical_weather(
+    latitude: float,
+    longitude: float,
+    start_date: str,
+    end_date: str,
+    hourly: str = "",
+    daily: str = "",
+    temperature_unit: str = "celsius",
+    wind_speed_unit: str = "kmh",
+    precipitation_unit: str = "mm",
+    timezone: str = "GMT"
+) -> dict[str, Any]:
+    """Fetch historical weather data (reanalysis) for a location from 1940 onwards.
+    
+    This uses actual historical weather data from reanalysis datasets, not forecast data.
+    Data has a 5-day delay and provides observations dating back to 1940.
+    
+    Args:
+        latitude: Latitude in decimal degrees.
+        longitude: Longitude in decimal degrees.
+        start_date: Start date in YYYY-MM-DD format.
+        end_date: End date in YYYY-MM-DD format.
+        hourly: Comma-separated list of hourly variables (e.g., 'temperature_2m,precipitation').
+        daily: Comma-separated list of daily aggregated variables (e.g., 'temperature_2m_max,precipitation_sum').
+        temperature_unit: Temperature unit ('celsius' or 'fahrenheit', default: 'celsius').
+        wind_speed_unit: Wind speed unit ('kmh', 'ms', 'mph', or 'kn', default: 'kmh').
+        precipitation_unit: Precipitation unit ('mm' or 'inch', default: 'mm').
+        timezone: Timezone (e.g., 'GMT', 'America/New_York', default: 'GMT').
+    """
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "start_date": start_date,
+        "end_date": end_date,
+        "temperature_unit": temperature_unit,
+        "wind_speed_unit": wind_speed_unit,
+        "precipitation_unit": precipitation_unit,
+        "timezone": timezone
+    }
+    
+    # Only add hourly/daily if they are provided
+    if hourly:
+        params["hourly"] = hourly
+    if daily:
+        params["daily"] = daily
+    
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(OPEN_METEO_ARCHIVE_API_BASE, params=params)
         resp.raise_for_status()
         return resp.json()
 
